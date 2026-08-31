@@ -17,8 +17,9 @@ Required secrets:
 - `DEPLOY_USER`
 - `DEPLOY_SSH_KEY`
 - `DEPLOY_KNOWN_HOSTS`
-- `GHCR_USERNAME`
-- `GHCR_TOKEN` (a token with `read:packages` access to the private image)
+
+The workflow uses its short-lived `GITHUB_TOKEN` to let the server pull the private image during
+deployment, so no long-lived GitHub package token is required.
 
 Variables:
 

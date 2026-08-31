@@ -77,8 +77,8 @@ jobs:
       DEPLOY_BASE: ${{ vars.DEPLOY_BASE || '/data/cqai-logto' }}
       DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
       DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
-      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+      GHCR_USERNAME: ${{ github.actor }}
+      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       IMAGE_REF: ${{ needs.build-image.outputs.image }}
 
     steps:
@@ -94,7 +94,6 @@ jobs:
           : "${DEPLOY_BASE:?DEPLOY_BASE is required}"
           : "${DEPLOY_KNOWN_HOSTS:?DEPLOY_KNOWN_HOSTS is required}"
           : "${DEPLOY_SSH_KEY:?DEPLOY_SSH_KEY is required}"
-          : "${GHCR_USERNAME:?GHCR_USERNAME is required}"
           : "${GHCR_TOKEN:?GHCR_TOKEN is required}"
           : "${IMAGE_REF:?IMAGE_REF is required}"
 
