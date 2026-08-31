@@ -8,6 +8,10 @@ The deployment server needs Docker, Docker Compose, and a restricted deployment 
 run Docker and write to the deployment directory. Create `/data/cqai-logto` (or the
 configured `DEPLOY_BASE`) and grant that account ownership before the first deployment.
 
+The current production target is the shared `shujubang` host. Ports `3001` and `3002` are already
+used there, so this deployment binds Logto to `127.0.0.1:3011` and the Admin Console to
+`127.0.0.1:3012`. Configure the host Nginx virtual hosts to proxy to those ports.
+
 ## GitHub production environment
 
 Required secrets:

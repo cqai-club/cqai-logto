@@ -23,8 +23,8 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - 127.0.0.1:${LOGTO_PORT:-3001}:3001
-      - 127.0.0.1:${LOGTO_ADMIN_PORT:-3002}:3002
+      - 127.0.0.1:${LOGTO_PORT:-3011}:3001
+      - 127.0.0.1:${LOGTO_ADMIN_PORT:-3012}:3002
     environment:
       NODE_ENV: production
       TRUST_PROXY_HEADER: ${TRUST_PROXY_HEADER:-1}
