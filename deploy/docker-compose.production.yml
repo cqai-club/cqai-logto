@@ -2,7 +2,7 @@ name: cqai-logto
 
 services:
   postgres:
-    image: postgres:17-alpine
+    image: ${POSTGRES_IMAGE:-ghcr.io/cqai-club/cqai-logto:postgres-17-alpine}
     restart: unless-stopped
     environment:
       POSTGRES_DB: logto

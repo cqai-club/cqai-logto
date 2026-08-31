@@ -8,6 +8,10 @@ The deployment server needs Docker, Docker Compose, and a restricted deployment 
 run Docker and write to the deployment directory. Create `/data/cqai-logto` (or the
 configured `DEPLOY_BASE`) and grant that account ownership before the first deployment.
 
+The workflow mirrors PostgreSQL 17 Alpine to the repository's GHCR package under the
+`postgres-17-alpine` tag. Production pulls both application and database images from GHCR because
+the `shujubang` host cannot reliably reach Docker Hub.
+
 The current production target is the shared `shujubang` host. Ports `3001` and `3002` are already
 used there, so this deployment binds Logto to `127.0.0.1:3011` and the Admin Console to
 `127.0.0.1:3012`. The production Nginx configuration is tracked in

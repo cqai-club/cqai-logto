@@ -49,6 +49,17 @@ jobs:
         id: image
         run: echo "ref=${IMAGE_NAME,,}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
+      - name: Mirror PostgreSQL image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/postgres.Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.IMAGE_NAME }}:postgres-17-alpine
+          cache-from: type=gha,scope=postgres
+          cache-to: type=gha,mode=max,scope=postgres
+
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
