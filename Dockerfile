@@ -5,6 +5,10 @@ FROM node:22-alpine AS builder
 WORKDIR /etc/logto
 ENV CI=true
 
+# The Admin Console production bundle exceeds Node.js' default heap limit on GitHub runners.
+ARG node_options=--max-old-space-size=4096
+ENV NODE_OPTIONS=${node_options}
+
 # No need for Docker build
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 
