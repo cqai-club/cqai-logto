@@ -1,0 +1,51 @@
+name: cqai-logto
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: logto
+      POSTGRES_USER: logto
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - logto-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logto -d logto"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  app:
+    image: ${LOGTO_IMAGE:?LOGTO_IMAGE is required}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - 127.0.0.1:${LOGTO_PORT:-3001}:3001
+      - 127.0.0.1:${LOGTO_ADMIN_PORT:-3002}:3002
+    environment:
+      NODE_ENV: production
+      TRUST_PROXY_HEADER: ${TRUST_PROXY_HEADER:-1}
+      DB_URL: ${DB_URL:?DB_URL is required}
+      ENDPOINT: ${ENDPOINT:?ENDPOINT is required}
+      ADMIN_ENDPOINT: ${ADMIN_ENDPOINT:?ADMIN_ENDPOINT is required}
+      REDIS_URL: ${REDIS_URL:-}
+      STATUS_API_KEY: ${STATUS_API_KEY:-}
+      SECRET_VAULT_KEK: ${SECRET_VAULT_KEK:-}
+      PRIVATE_KEY_ROTATION_GRACE_PERIOD: ${PRIVATE_KEY_ROTATION_GRACE_PERIOD:-0}
+      SSRF_ALLOWED_ADDRESSES: ${SSRF_ALLOWED_ADDRESSES:-}
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:3001/status').then((response)=>process.exit(response.status===204?0:1)).catch(()=>process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+
+volumes:
+  logto-postgres:
