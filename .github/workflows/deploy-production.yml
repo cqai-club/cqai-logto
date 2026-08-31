@@ -5,6 +5,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy the built image to the production environment
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -58,7 +64,9 @@ jobs:
   deploy:
     name: Deploy production
     needs: build-image
-    if: github.event_name == 'workflow_dispatch' || vars.DEPLOY_ENABLED == 'true'
+    if: >-
+      (github.event_name == 'push' && vars.DEPLOY_ENABLED == 'true') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production
