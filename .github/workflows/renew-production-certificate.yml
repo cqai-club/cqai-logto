@@ -1,0 +1,86 @@
+name: Renew production certificate
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 1 * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cqai-logto-production-certificate
+  cancel-in-progress: false
+
+jobs:
+  renew-certificate:
+    name: Renew production TLS certificate
+    if: github.event_name == 'workflow_dispatch' || vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate certificate configuration
+        run: |
+          set -euo pipefail
+          : "${DEPLOY_HOST:?DEPLOY_HOST is required}"
+          : "${DEPLOY_PORT:?DEPLOY_PORT is required}"
+          : "${DEPLOY_USER:?DEPLOY_USER is required}"
+          : "${DEPLOY_KNOWN_HOSTS:?DEPLOY_KNOWN_HOSTS is required}"
+          : "${DEPLOY_SSH_KEY:?DEPLOY_SSH_KEY is required}"
+
+      - name: Configure SSH
+        run: |
+          set -euo pipefail
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts"
+
+      - name: Install Certbot
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes certbot
+
+      - name: Request certificate
+        run: |
+          set -euo pipefail
+          chmod +x deploy/certbot-remote-auth.sh deploy/certbot-remote-cleanup.sh
+          certbot certonly \
+            --config-dir "$RUNNER_TEMP/letsencrypt" \
+            --work-dir "$RUNNER_TEMP/letsencrypt-work" \
+            --logs-dir "$RUNNER_TEMP/letsencrypt-logs" \
+            --manual \
+            --preferred-challenges http \
+            --manual-auth-hook "$GITHUB_WORKSPACE/deploy/certbot-remote-auth.sh" \
+            --manual-cleanup-hook "$GITHUB_WORKSPACE/deploy/certbot-remote-cleanup.sh" \
+            --non-interactive \
+            --agree-tos \
+            --register-unsafely-without-email \
+            --cert-name cqai-logto \
+            -d auth.cqaiclub.asia \
+            -d auth-admin.cqaiclub.asia
+
+      - name: Install certificate
+        run: |
+          set -euo pipefail
+          certificate_dir="$RUNNER_TEMP/letsencrypt/live/cqai-logto"
+          scp -i "$HOME/.ssh/id_ed25519" -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -P "$DEPLOY_PORT" "$certificate_dir/fullchain.pem" \
+            "$DEPLOY_USER@$DEPLOY_HOST:/etc/nginx/ssl/cqai-logto.fullchain.pem"
+          scp -i "$HOME/.ssh/id_ed25519" -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -P "$DEPLOY_PORT" "$certificate_dir/privkey.pem" \
+            "$DEPLOY_USER@$DEPLOY_HOST:/etc/nginx/ssl/cqai-logto.key"
+          ssh -i "$HOME/.ssh/id_ed25519" -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "chmod 644 /etc/nginx/ssl/cqai-logto.fullchain.pem && chmod 600 /etc/nginx/ssl/cqai-logto.key && nginx -t && systemctl reload nginx"

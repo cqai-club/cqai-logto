@@ -8,9 +8,19 @@ The deployment server needs Docker, Docker Compose, and a restricted deployment 
 run Docker and write to the deployment directory. Create `/data/cqai-logto` (or the
 configured `DEPLOY_BASE`) and grant that account ownership before the first deployment.
 
+The workflow mirrors PostgreSQL 17 Alpine to the repository's GHCR package under the
+`postgres-17-alpine` tag. Production pulls both application and database images from GHCR because
+the `shujubang` host cannot reliably reach Docker Hub.
+
 The current production target is the shared `shujubang` host. Ports `3001` and `3002` are already
 used there, so this deployment binds Logto to `127.0.0.1:3011` and the Admin Console to
-`127.0.0.1:3012`. Configure the host Nginx virtual hosts to proxy to those ports.
+`127.0.0.1:3012`. The production Nginx configuration is tracked in
+`deploy/nginx.cqai-logto.conf`.
+
+The `Renew production certificate` workflow requests a certificate for `auth.cqaiclub.asia` and
+`auth-admin.cqaiclub.asia` on the first day of every month. It uses an HTTP challenge uploaded over
+the restricted production SSH connection, then validates and reloads Nginx after installing the
+renewed certificate.
 
 ## GitHub production environment
 

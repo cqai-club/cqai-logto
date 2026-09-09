@@ -2,7 +2,7 @@ name: cqai-logto
 
 services:
   postgres:
-    image: postgres:17-alpine
+    image: ${POSTGRES_IMAGE:-ghcr.io/cqai-club/cqai-logto:postgres-17-alpine}
     restart: unless-stopped
     environment:
       POSTGRES_DB: logto
@@ -41,7 +41,7 @@ services:
         - CMD
         - node
         - -e
-        - fetch('http://127.0.0.1:3001/status').then((response)=>process.exit(response.status===204?0:1)).catch(()=>process.exit(1))
+        - fetch('http://127.0.0.1:3001/status').then((response)=>process.exit(response.ok?0:1)).catch(()=>process.exit(1))
       interval: 10s
       timeout: 5s
       retries: 18
