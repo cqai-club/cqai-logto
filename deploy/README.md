@@ -25,6 +25,12 @@ Required secrets:
 The workflow uses its short-lived `GITHUB_TOKEN` to let the server pull the private image during
 deployment, so no long-lived GitHub package token is required.
 
+Each deployment pulls the immutable commit-tagged image from GHCR. After the new app passes its
+container health check, the server keeps only that current image and the image that was running
+before the deployment. The retained pair is recorded in
+`$DEPLOY_BASE/image-retention.env`; the database volume is not removed. If the new app fails
+to become healthy, the deployment script attempts to restore the previous app image.
+
 Variables:
 
 - `DEPLOY_ENABLED`: set to `true` after the server and domains are ready
