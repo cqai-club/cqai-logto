@@ -47,7 +47,10 @@ jobs:
 
       - name: Resolve image reference
         id: image
-        run: echo "ref=${IMAGE_NAME,,}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+        run: |
+          image_repository="${IMAGE_NAME,,}"
+          echo "repository=$image_repository" >> "$GITHUB_OUTPUT"
+          echo "ref=$image_repository:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Mirror PostgreSQL image
         uses: docker/build-push-action@v6
@@ -56,11 +59,11 @@ jobs:
           file: deploy/postgres.Dockerfile
           platforms: linux/amd64
           push: true
-          tags: ${{ env.IMAGE_NAME }}:postgres-17-alpine
+          tags: ${{ steps.image.outputs.repository }}:postgres-17-alpine
           cache-from: type=gha,scope=postgres
           cache-to: type=gha,mode=max,scope=postgres
 
-      - name: Build and push image
+      - name: Build and push GHCR image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -68,7 +71,7 @@ jobs:
           push: true
           tags: |
             ${{ steps.image.outputs.ref }}
-            ${{ env.IMAGE_NAME }}:main
+            ${{ steps.image.outputs.repository }}:main
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -137,7 +140,7 @@ jobs:
             deploy/remote-deploy.sh \
             "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_BASE/incoming/remote-deploy.sh"
 
-      - name: Deploy image
+      - name: Pull and deploy image on server
         run: |
           set -euo pipefail
           printf '%s' "$GHCR_TOKEN" | ssh \
